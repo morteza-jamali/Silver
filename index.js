@@ -17,6 +17,7 @@ require('colors');
 var INJECTED_CODE = fs.readFileSync(path.join(__dirname, "injected.html"), "utf8");
 
 var LiveServer = {
+	clients: null,
 	server: null,
 	watcher: null,
 	logLevel: 2
@@ -313,7 +314,7 @@ LiveServer.start = function(options) {
 	server.listen(port, host);
 
 	// WebSocket
-	var clients = [];
+	LiveServer.clients = [];
 	server.addListener('upgrade', function(request, socket, head) {
 		var ws = new WebSocket(request, socket, head);
 		ws.onopen = function() { ws.send('connected'); };
@@ -333,12 +334,12 @@ LiveServer.start = function(options) {
 		}
 
 		ws.onclose = function() {
-			clients = clients.filter(function (x) {
+			LiveServer.clients = LiveServer.clients.filter(function (x) {
 				return x !== ws;
 			});
 		};
 
-		clients.push(ws);
+		LiveServer.clients.push(ws);
 	});
 
 	var ignored = [
@@ -364,7 +365,7 @@ LiveServer.start = function(options) {
 				console.log("CSS change detected".magenta, changePath);
 			else console.log("Change detected".cyan, changePath);
 		}
-		clients.forEach(function(ws) {
+		LiveServer.clients.forEach(function(ws) {
 			if (ws)
 				ws.send(cssChange ? 'refreshcss' : 'reload');
 		});
